@@ -42,3 +42,16 @@ To enable debugging just call the following
 If **handler** is None it defaults to `logging.StreamHandler`
 
 If **formatter** is None it defaults to an internal formatter found in the `logr` module
+
+
+### Installation
+PyUPnP can be installed globally by running
+
+    sudo python setup.py install
+
+or locally by running
+
+    python setup.py install --user
+
+
+
