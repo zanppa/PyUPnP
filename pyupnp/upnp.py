@@ -144,9 +144,10 @@ class ServiceControlResource(Resource):
 
         result = func(**kwargs)
 
-        return buildSOAP(kw={
-            '%sResponse' % name: result
-        })
+        #return buildSOAP(kw={
+        #    '%sResponse' % name: result
+        #})
+        return buildSOAP(method='%sResponse' % name, kw=result, namespace=self.service.serviceType)
 
 
 class ServiceEventResource(Resource):
