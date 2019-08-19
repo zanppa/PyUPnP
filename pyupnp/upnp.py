@@ -119,7 +119,7 @@ class ServiceControlResource(Resource):
     def render(self, request):
         try:
             return Resource.render(self, request)
-        except UnsupportedMethod, e:
+        except UnsupportedMethod as e:
             Logr.debug("(%s) unhandled method %s",
                        self.service.serviceType, request.method)
             raise e
@@ -185,7 +185,7 @@ class ServiceEventResource(Resource):
     def render(self, request):
         try:
             return Resource.render(self, request)
-        except UnsupportedMethod, e:
+        except UnsupportedMethod as e:
             Logr.debug("(%s) %s", self.service.serviceType, request.method)
             raise e
 
