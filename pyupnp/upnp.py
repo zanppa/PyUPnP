@@ -26,6 +26,12 @@ from pyupnp.util import twisted_absolute_path
 __author__ = 'Dean Gardiner'
 
 
+class SOAPError(Exception):
+    def __init__(self, code, message):
+        Exception.__init__(self, message)
+        self.errorCode = code
+
+
 def getHeader(request, name, required=True, default=None):
     result = request.requestHeaders.getRawHeaders(name)
     if len(result) != 1:
