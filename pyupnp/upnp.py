@@ -148,7 +148,12 @@ class ServiceControlResource(Resource):
                 else:
                     raise TypeError()
 
-        result = func(**kwargs)
+        try:
+            result = func(**kwargs)
+        except SOAPError as e:
+            request.setResponseCode(500)
+            fault = {'faultcode' : e.errorCode, 'faultstring' : str(e)}
+            return buildSOAP(method='Fault', kw=fault)
 
         #return buildSOAP(kw={
         #    '%sResponse' % name: result
