@@ -54,4 +54,20 @@ or locally by running
     python setup.py install --user
 
 
+### Usage
+See the example mediaserver for basic usage.
+
+To return variables in response to an action call, the action functions should return the variables 
+in a dictionary:
+```
+return {'parameter1':value1, 'parameter2':value2}
+```
+
+If an upnp error needs to be returned, the action function can raise an `upnpError`:
+```
+from pyupnp.upnp import upnpError
+...
+raise upnpError(501, 'ActionFailed')
+```
+in which the first parameter is the `errorCode` and the second parameter is `errorDescription`.
 
