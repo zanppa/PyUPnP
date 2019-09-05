@@ -32,7 +32,7 @@ SSDP_PORT = 1900
 
 
 class SSDP:
-    def __init__(self, device, interfaces, bind):
+    def __init__(self, device, interfaces=None, bind=None):
         """SSDP Client/Listener
 
         :type device: Device
@@ -51,11 +51,13 @@ class SSDP:
         for service in self.device.services:
             self.targets.append(service.serviceType)
 
-        self.interfaces = interfaces
-        #self.interfaces = [
-        #    '',
-        #    get_default_v4_address()
-        #]
+        if not interfaces:
+            self.interfaces = [
+                '',
+                get_default_v4_address()
+            ]
+        else:
+            self.interfaces = interfaces
 
         # Which interface the upnpn server is bind to
         self.bind = bind
@@ -106,7 +108,7 @@ class SSDP_ClientsInterface:
 
 
 class SSDP_Client(DatagramProtocol):
-    def __init__(self, ssdp, interface, bind, notifyInterval=1800):
+    def __init__(self, ssdp, interface, bind=None, notifyInterval=1800):
         self.ssdp = ssdp
         self.interface = interface
 
@@ -162,8 +164,10 @@ class SSDP_Client(DatagramProtocol):
         if self.ssdp.device.bootID is None:
             self.ssdp.device.bootID = int(time.time())
 
-        #location = self.ssdp.device.getLocation(get_default_v4_address())
-        location = self.ssdp.device.getLocation(self.bind)
+        if not self.bind:
+            location = self.ssdp.device.getLocation(get_default_v4_address())
+        else:
+            location = self.ssdp.device.getLocation(self.bind)
 
         if uuid is None:
             uuid = self.ssdp.device.uuid
@@ -240,7 +244,7 @@ class SSDP_Client(DatagramProtocol):
 
 
 class SSDP_Listener(DatagramProtocol):
-    def __init__(self, ssdp, interfaces, bind, responseExpire=900):
+    def __init__(self, ssdp, interfaces, bind=None, responseExpire=900):
         self.ssdp = ssdp
         self.interfaces = interfaces
         self.responseExpire = responseExpire
@@ -336,8 +340,10 @@ class SSDP_Listener(DatagramProtocol):
         if address == '127.0.0.1':
             location = self.ssdp.device.getLocation('127.0.0.1')
         else:
-            #location = self.ssdp.device.getLocation(get_default_v4_address())
-            location = self.ssdp.device.getLocation(self.bind)
+            if not self.bind:
+                location = self.ssdp.device.getLocation(get_default_v4_address())
+            else:
+                location = self.ssdp.device.getLocation(self.bind)
 
         usn, st = build_notification_type(self.ssdp.device.uuid, st)
 
