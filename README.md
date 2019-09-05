@@ -43,6 +43,8 @@ If **handler** is None it defaults to `logging.StreamHandler`
 
 If **formatter** is None it defaults to an internal formatter found in the `logr` module
 
+### Quitting
+The example mediaserver can be quit by typing `stop` followed by enter, or by sending `EOF` (pressing `Control+d`).
 
 ### Installation
 PyUPnP can be installed globally by running
