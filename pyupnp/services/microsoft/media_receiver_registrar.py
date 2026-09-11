@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from pyupnp.services import Service, ServiceActionArgument, ServiceStateVariable, register_action
-
+from pyupnp.upnp import upnpError
 
 class MediaReceiverRegistrarService(Service):
     version = (1, 0)
@@ -56,12 +56,15 @@ class MediaReceiverRegistrarService(Service):
 
     @register_action('IsAuthorized')
     def isAuthorized(self, device_id):
-        raise NotImplementedError()
+        raise upnpError(501, 'Action Failed')
+        #raise NotImplementedError()
 
     @register_action('RegisterDevice')
     def registerDevice(self, request):
-        raise NotImplementedError()
+        raise upnpError(501, 'Action Failed')
+        #raise NotImplementedError()
 
     @register_action('IsValidated')
     def isValidated(self, device_id):
-        raise NotImplementedError()
+        raise upnpError(501, 'Action Failed')
+        #raise NotImplementedError()

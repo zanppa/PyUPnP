@@ -26,7 +26,7 @@ from pyupnp.util import twisted_absolute_path
 __author__ = 'Dean Gardiner'
 
 
-class SOAPError(Exception):
+class upnpError(Exception):
     def __init__(self, code, message):
         Exception.__init__(self, message)
         self.errorCode = code
@@ -150,10 +150,11 @@ class ServiceControlResource(Resource):
 
         try:
             result = func(**kwargs)
-        except SOAPError as e:
+        except upnpError as e:
             request.setResponseCode(500)
-            fault = {'faultcode' : e.errorCode, 'faultstring' : str(e)}
-            return buildSOAP(method='Fault', kw=fault)
+            fault = {'faultcode' : 's:Client', 'faultstring' : 'UPnPError'}
+            fault['detail'] = {'UPnPError' : {'errorCode' : e.errorCode, 'errorDescription' : str(e)}}
+            return buildSOAP(method='Fault', kw=fault, namespace='http://schemas.xmlsoap.org/soap/envelope/')
 
         #return buildSOAP(kw={
         #    '%sResponse' % name: result
