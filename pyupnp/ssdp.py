@@ -145,7 +145,7 @@ class SSDP_Client(DatagramProtocol):
         msg += '\r\n\r\n'
 
         try:
-            self.transport.write(msg, address, port)
+            self.transport.write(msg.encode('UTF-8'), (address, port))
         except socket.error as e:
             Logr.warning("socket.error: %s", e)
 
@@ -156,7 +156,7 @@ class SSDP_Client(DatagramProtocol):
         msg += '\r\n\r\n'
 
         try:
-            self.transport.write(msg, address, port)
+            self.transport.write(msg.encode('UTF-8'), (address, port))
         except socket.error as e:
             Logr.warning("socket.error: %s", e)
 
@@ -188,7 +188,7 @@ class SSDP_Client(DatagramProtocol):
             'CONFIGID.UPNP.ORG': self.ssdp.device.configID
         }
 
-        self.send('NOTIFY', headers, (SSDP_ADDR_V4, SSDP_PORT))
+        self.send('NOTIFY', headers, SSDP_ADDR_V4, SSDP_PORT)
 
     def sendall_NOTIFY(self, delay=1, nts='ssdp:alive', blocking=False):
         if delay is None:
@@ -280,7 +280,8 @@ class SSDP_Listener(DatagramProtocol):
 
         self.listen_port.stopListening()
 
-    def datagramReceived(self, data, address, port):
+    def datagramReceived(self, data, addr):
+        address, port = addr
         Logr.debug("datagramReceived() from %s:%s", address, port)
 
         method, path, version, headers = http_parse_raw(data)
@@ -327,7 +328,7 @@ class SSDP_Listener(DatagramProtocol):
         msg += '\r\n\r\n'
 
         try:
-            self.transport.write(msg, address, port)
+            self.transport.write(msg.encode('UTF-8'), (address, port))
         except socket.error as e:
             Logr.warning("socket.error: %s", e)
 
