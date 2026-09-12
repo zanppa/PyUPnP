@@ -63,7 +63,7 @@ class Logr(object):
     def get_logger_name():
         stack = inspect.stack()
 
-        for x in xrange(len(stack)):
+        for x in range(len(stack)):
             frame = stack[x][0]
             name = None
 

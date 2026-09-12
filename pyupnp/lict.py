@@ -57,7 +57,7 @@ class Lict():
         if hasattr(p_object, self._searchNames[0]):
             return getattr(p_object, self._searchNames[0])
 
-        for x in xrange(len(self._searchNames)):
+        for x in range(len(self._searchNames)):
             key = self._searchNames[x]
             if hasattr(p_object, key):
                 matched_key = key
