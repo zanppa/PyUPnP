@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from SOAPpy import parseSOAPRPC, buildSOAP
+from lxml import etree
 import time
 from twisted.internet import reactor
 from twisted.web.error import UnsupportedMethod
@@ -24,6 +24,85 @@ from pyupnp.logr import Logr
 from pyupnp.util import twisted_absolute_path
 
 __author__ = 'Dean Gardiner'
+
+def parse_SOAP_RPC(xml_bytes):
+    """Parse a UPnP SOAP request body and extract the arguments."""
+    root = etree.fromstring(xml_bytes)
+
+    # UPnP requests always embed the method name directly inside <s:Body>
+    # Grab the first child of the Body element regardless of its namespace
+    body_element = root.xpath('///*[local-name()="Body"]/*[1]')
+    if not body_element:
+        raise ValueError("Invalid SOAP structural format")
+
+    action_element = body_element[0]
+    # Remove namespace brackets if present to get clean action name
+    action_name = action_element.tag.split('}')[-1]
+
+    # Extract arguments mapping key -> text content
+    arguments = {}
+    for child in action_element:
+        arg_name = child.tag.split('}')[-1]
+        arguments[arg_name] = child.text
+
+    return action_name, arguments
+
+
+
+def build_SOAP(method='Response', namespace=None, kw=None):
+    """ Build a compliant UPnP SOAP 1.1 response body.
+    e.g., namespace = "urn:schemas-upnp-org:service:WANIPConnection:1"
+          method = "GetExternalIPAddressResponse"
+          kw = {"NewExternalIPAddress": "203.0.113.195"}
+    """
+    # Define UPnP standard SOAP namespaces
+    NS_SOAP = "http://schemas.xmlsoap.org/soap/envelope/"
+    NS_ENC = "http://schemas.xmlsoap.org/soap/encoding/"
+    xsd = "http://www.w3.org/1999/XMLSchema"
+    xsi = "http://www.w3.org/1999/XMLSchema-instance"
+    nsmap = {
+        'SOAP-ENV': NS_SOAP,
+        'SOAP-ENC': NS_ENC,
+        'xsd': xsd,
+        'xsi': xsi
+    }
+
+    # Create the Envelope
+    envelope = etree.Element(f"{{{NS_SOAP}}}Envelope", nsmap=nsmap)
+    envelope.set(f"{{{NS_SOAP}}}encodingStyle", NS_ENC)
+
+    # Create the Body
+    body = etree.SubElement(envelope, f"{{{NS_SOAP}}}Body")
+
+    # Create the Action Response Tag (UPnP dictates it must append 'Response')
+    action_nsmap = {'ns1': namespace}
+    action_response = etree.SubElement(
+        body,
+        f"{{{namespace}}}{method}",
+        nsmap=action_nsmap
+    )
+
+    # Inject Output Arguments
+    if kw:
+        for key, value in kw.items():
+            arg_elem = etree.SubElement(action_response, key)
+
+            # Recursively append dictionary entries (e.g., UPnPError -> errorCode)
+            def dict_to_xml(parent, dictionary):
+                for k, v in dictionary.items():
+                    child = etree.SubElement(parent, k)
+                    if isinstance(v, dict):
+                        dict_to_xml(child, v)
+                    else:
+                        child.text = str(v)
+
+            if isinstance(value, dict):
+                dict_to_xml(arg_elem, value)
+            else:
+                arg_elem.text = str(value)
+
+    # Return raw XML bytes
+    return etree.tostring(envelope, xml_declaration=True, encoding="utf-8")
 
 
 class upnpError(Exception):
@@ -119,17 +198,14 @@ class ServiceControlResource(Resource):
     def render(self, request):
         try:
             return Resource.render(self, request)
-        except UnsupportedMethod, e:
+        except UnsupportedMethod as e:
             Logr.debug("(%s) unhandled method %s",
                        self.service.serviceType, request.method)
             raise e
 
     def render_POST(self, request):
         data = request.content.getvalue()
-        (r, header, body, attrs) = parseSOAPRPC(data, header=1, body=1, attrs=1)
-
-        name = r._name
-        kwargs = r._asdict()
+        name, kwargs = parse_SOAP_RPC(data)
 
         Logr.debug("(%s) %s", self.service.serviceType, name)
 
@@ -154,12 +230,12 @@ class ServiceControlResource(Resource):
             request.setResponseCode(500)
             fault = {'faultcode' : 's:Client', 'faultstring' : 'UPnPError'}
             fault['detail'] = {'UPnPError' : {'errorCode' : e.errorCode, 'errorDescription' : str(e)}}
-            return buildSOAP(method='Fault', kw=fault, namespace='http://schemas.xmlsoap.org/soap/envelope/')
+            return build_SOAP(method='Fault', kw=fault, namespace='http://schemas.xmlsoap.org/soap/envelope/')
 
         #return buildSOAP(kw={
         #    '%sResponse' % name: result
         #})
-        return buildSOAP(method='%sResponse' % name, kw=result, namespace=self.service.serviceType)
+        return build_SOAP(method='%sResponse' % name, kw=result, namespace=self.service.serviceType)
 
 
 class ServiceEventResource(Resource):
@@ -186,7 +262,7 @@ class ServiceEventResource(Resource):
     def render(self, request):
         try:
             return Resource.render(self, request)
-        except UnsupportedMethod, e:
+        except UnsupportedMethod as e:
             Logr.debug("(%s) %s", self.service.serviceType, request.method)
             raise e
 

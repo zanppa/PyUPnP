@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import socket
-import urlparse
+import urllib
 import xml.etree.ElementTree as et
 
 __author__ = 'Dean Gardiner'
@@ -23,9 +23,9 @@ __author__ = 'Dean Gardiner'
 
 def twisted_absolute_path(path, request):
     """Hack to fix twisted not accepting absolute URIs"""
-    parsed = urlparse.urlparse(request.uri)
+    parsed = urllib.parse.urlsplit(request.uri)
     if parsed.scheme != '':
-        path_parts = parsed.path.lstrip('/').split('/')
+        path_parts = parsed.path.decode('UTF-8').lstrip('/').split('/')
         request.prepath = path_parts[0:1]
         request.postpath = path_parts[1:]
         path = request.prepath[0]
@@ -33,7 +33,7 @@ def twisted_absolute_path(path, request):
 
 
 def http_parse_raw(data):
-    lines = data.split('\r\n')
+    lines = data.decode('UTF-8').split('\r\n')
 
     version, respCode, respText = None, None, None
     headers = {}
@@ -50,7 +50,7 @@ def http_parse_raw(data):
             hk = lines[x][:sep].lower()
             hv = lines[x][sep+1:].strip()
 
-            if headers.has_key(hk):
+            if hk in headers:
                 headers[hk] = [headers[hk], hv]
             else:
                 headers[hk] = hv
@@ -83,9 +83,9 @@ def absolute_url(baseUrl, url):
     if url.strip() == '':
         return url
 
-    urlp = urlparse.urlparse(url)
+    urlp = urllib.parse(url)
     if urlp.netloc == '':
-        url = urlparse.urljoin(baseUrl, url)
+        url = urllib.parse.join(baseUrl, url)
 
     return url
 

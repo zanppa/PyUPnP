@@ -57,7 +57,7 @@ class Lict():
         if hasattr(p_object, self._searchNames[0]):
             return getattr(p_object, self._searchNames[0])
 
-        for x in xrange(len(self._searchNames)):
+        for x in range(len(self._searchNames)):
             key = self._searchNames[x]
             if hasattr(p_object, key):
                 matched_key = key
@@ -384,13 +384,13 @@ if __name__ == '__main__':
     print_digits = 4
 
     def print_result(result):
-        print str(round(result, print_digits)) + u"\u00B5s"
+        print(str(round(result, print_digits)) + u"\u00B5s")
 
     # ----------------------------------
     #  append
     # ----------------------------------
 
-    print '----- append -----'
+    print('----- append -----')
 
     lict_append_result = (sum(timeit.repeat("""
 col.append(LictTest(name=str(uuid.uuid4())))
@@ -399,7 +399,7 @@ import uuid
 from lict import Lict, LictTest
 col = Lict()
     """, repeat=repeat, number=number)) / repeat / number) * 1000 * 1000
-    print 'lict',
+    print('lict',)
     print_result(lict_append_result)
 
     list_append_result = (sum(timeit.repeat("""
@@ -409,18 +409,18 @@ import uuid
 from lict import LictTest
 col = []
     """, repeat=repeat, number=number)) / repeat / number) * 1000 * 1000
-    print 'list',
+    print('list',)
     print_result(list_append_result)
 
-    print '====', str(round(lict_append_result - list_append_result, print_digits)) + u"\u00B5s",\
+    print('====', str(round(lict_append_result - list_append_result, print_digits)) + u"\u00B5s",\
         '(' + str(round(((lict_append_result / list_append_result) - 1) * 100, 2)) + '%)',\
-        'slower than list'
+        'slower than list')
 
     # ----------------------------------
     #  remove
     # ----------------------------------
 
-    print '------- pop ------'
+    print('------- pop ------')
 
     lict_append_result = (sum(timeit.repeat("""
 col.pop()
@@ -431,7 +431,7 @@ col = Lict()
 for x in range(""" + str(number) + """):
     col.append(LictTest(name=str(uuid.uuid4())))
     """, repeat=repeat, number=number)) / repeat / number) * 1000 * 1000
-    print 'lict',
+    print('lict',)
     print_result(lict_append_result)
 
     list_append_result = (sum(timeit.repeat("""
@@ -443,9 +443,9 @@ col = []
 for x in range(""" + str(number) + """):
     col.append(LictTest(name=str(uuid.uuid4())))
     """, repeat=repeat, number=number)) / repeat / number) * 1000 * 1000
-    print 'list',
+    print('list',)
     print_result(list_append_result)
 
-    print '====', str(round(lict_append_result - list_append_result, print_digits)) + u"\u00B5s", \
+    print('====', str(round(lict_append_result - list_append_result, print_digits)) + u"\u00B5s", \
         '(' + str(round(((lict_append_result / list_append_result) - 1) * 100, 2)) + '%)', \
-        'slower than list'
+        'slower than list')

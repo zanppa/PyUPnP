@@ -21,7 +21,7 @@ import time
 from twisted.internet import reactor, task
 from twisted.internet.protocol import DatagramProtocol
 from pyupnp.logr import Logr
-from pyupnp.util import (http_parse_raw, get_default_v4_address,
+from pyupnp.util import (http_parse_raw, get_default_address,
                          headers_join, build_notification_type)
 
 __author__ = 'Dean Gardiner'
@@ -98,9 +98,9 @@ class SSDP_ClientsInterface:
         for client in self.clients:
             client.stop()
 
-    def respond(self, headers, (address, port)):
+    def respond(self, headers, address, port):
         for client in self.clients:
-            client.respond(headers, (address, port))
+            client.respond(headers, address, port)
 
     def sendall_NOTIFY(self, delay=1, nts='ssdp:alive', blocking=False):
         for client in self.clients:
@@ -138,26 +138,26 @@ class SSDP_Client(DatagramProtocol):
         self.notifySequenceLoop.stop()
         self.listen_port.stopListening()
 
-    def respond(self, headers, (address, port)):
+    def respond(self, headers, address, port):
         Logr.debug("respond() %s %d", address, port)
         msg = 'HTTP/1.1 200 OK\r\n'
         msg += headers_join(headers)
         msg += '\r\n\r\n'
 
         try:
-            self.transport.write(msg, (address, port))
-        except socket.error, e:
+            self.transport.write(msg.encode('UTF-8'), (address, port))
+        except socket.error as e:
             Logr.warning("socket.error: %s", e)
 
-    def send(self, method, headers, (address, port)):
+    def send(self, method, headers, address, port):
         Logr.debug("send() %s:%s", address, port)
         msg = '%s * HTTP/1.1\r\n' % method
         msg += headers_join(headers)
         msg += '\r\n\r\n'
 
         try:
-            self.transport.write(msg, (address, port))
-        except socket.error, e:
+            self.transport.write(msg.encode('UTF-8'), (address, port))
+        except socket.error as e:
             Logr.warning("socket.error: %s", e)
 
     def send_NOTIFY(self, nt, uuid=None, nts='ssdp:alive'):
@@ -188,7 +188,7 @@ class SSDP_Client(DatagramProtocol):
             'CONFIGID.UPNP.ORG': self.ssdp.device.configID
         }
 
-        self.send('NOTIFY', headers, (SSDP_ADDR_V4, SSDP_PORT))
+        self.send('NOTIFY', headers, SSDP_ADDR_V4, SSDP_PORT)
 
     def sendall_NOTIFY(self, delay=1, nts='ssdp:alive', blocking=False):
         if delay is None:
@@ -280,19 +280,20 @@ class SSDP_Listener(DatagramProtocol):
 
         self.listen_port.stopListening()
 
-    def datagramReceived(self, data, (address, port)):
+    def datagramReceived(self, data, addr):
+        address, port = addr
         Logr.debug("datagramReceived() from %s:%s", address, port)
 
         method, path, version, headers = http_parse_raw(data)
 
         if method == 'M-SEARCH':
-            self.received_MSEARCH(headers, (address, port))
+            self.received_MSEARCH(headers, address, port)
         elif method == 'NOTIFY':
-            self.received_NOTIFY(headers, (address, port))
+            self.received_NOTIFY(headers, address, port)
         else:
             Logr.warning("Unhandled Method '%s'", method)
 
-    def received_MSEARCH(self, headers, (address, port)):
+    def received_MSEARCH(self, headers, address, port):
         Logr.debug("received_MSEARCH")
         try:
             host = headers['host']
@@ -313,25 +314,25 @@ class SSDP_Listener(DatagramProtocol):
         if st == 'ssdp:all':
             for target in self.ssdp.targets:
                 reactor.callLater(self.rand.randint(1, mx),
-                                  self.respond_MSEARCH, target, (address, port))
+                                  self.respond_MSEARCH, target, address, port)
         elif st in self.ssdp.targets:
             reactor.callLater(self.rand.randint(1, mx),
-                              self.respond_MSEARCH, st, (address, port))
+                              self.respond_MSEARCH, st, address, port)
         else:
             Logr.debug("ignoring %s", st)
 
-    def respond(self, headers, (address, port)):
+    def respond(self, headers, address, port):
         Logr.debug("respond() %s:%s", address, port)
         msg = 'HTTP/1.1 200 OK\r\n'
         msg += headers_join(headers)
         msg += '\r\n\r\n'
 
         try:
-            self.transport.write(msg, (address, port))
-        except socket.error, e:
+            self.transport.write(msg.encode('UTF-8'), (address, port))
+        except socket.error as e:
             Logr.warning("socket.error: %s", e)
 
-    def respond_MSEARCH(self, st, (address, port)):
+    def respond_MSEARCH(self, st, address, port):
         Logr.debug("respond_MSEARCH")
 
         if self.ssdp.device.bootID is None:
@@ -344,6 +345,12 @@ class SSDP_Listener(DatagramProtocol):
                 location = self.ssdp.device.getLocation(get_default_v4_address())
             else:
                 location = self.ssdp.device.getLocation(self.bind)
+
+            # TODO:
+            # Assume the UPnP server is also listening on the same interface from
+            # where the search query came.
+            # At the moment the UPnP server can only listen on one interface...
+            #location = self.ssdp.device.getLocation(get_default_address(address))
 
         usn, st = build_notification_type(self.ssdp.device.uuid, st)
 
@@ -360,7 +367,7 @@ class SSDP_Listener(DatagramProtocol):
             'CONFIGID.UPNP.ORG': self.ssdp.device.configID,
         }
 
-        self.respond(headers, (address, port))
+        self.respond(headers, address, port)
 
-    def received_NOTIFY(self, headers, (address, port)):
+    def received_NOTIFY(self, headers, address, port):
         Logr.debug("received_NOTIFY")
