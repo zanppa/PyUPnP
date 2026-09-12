@@ -14,6 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import inspect
 import uuid
 import xml.etree.ElementTree as et
 from twisted.internet import reactor
@@ -135,8 +136,8 @@ class Service(object):
 
     def dumps(self, force=False):
         if self.__class__._description is None or force:
-            self.__class__._description = '<?xml version="1.0" encoding="utf-8"?>' + \
-                                          et.tostring(self.dump())
+            self.__class__._description = '<?xml version="1.0" encoding="utf-8"?>'.encode('UTF-8') + \
+                                          et.tostring(self.dump(), encoding='UTF-8')
         return self.__class__._description
 
 
@@ -161,9 +162,9 @@ class ServiceActionWrapper:
             arguments = self.service.actions[self.name]
 
             # Set arguments 'parameterName' attribute from function spec
-            self.func_params = self.func.func_code.co_varnames
-            for x in xrange(1, len(self.func_params)):
-                j = x - 1
+            self.func_params = list(inspect.signature(self.func).parameters.keys())
+            for x in range(len(self.func_params)):
+                j = x
 
                 param = self.func_params[x]
                 if j >= len(arguments):
