@@ -132,8 +132,7 @@ class Device:
 
     def dumps(self, force=False):
         if self.__class__._description is None or force:
-            self.__class__._description = '<?xml version="1.0"?>' + \
-                                          et.tostring(self.dump())
+            self.__class__._description = '<?xml version="1.0"?>'.encode('UTF-8') + et.tostring(self.dump(), encoding='utf8')
         return self.__class__._description
 
 
